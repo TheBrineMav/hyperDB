@@ -1,6 +1,5 @@
 import gzip
 import pickle
-
 import numpy as np
 import openai
 
@@ -13,13 +12,13 @@ from hyperdb.galaxy_brain_math_shit import (
     hyper_SVM_ranking_algorithm_sort,
 )
 
-MAX_BATCH_SIZE = 2048  # OpenAI batch endpoint max size https://github.com/openai/openai-python/blob/main/openai/embeddings_utils.py#L43
+EMBEDDING_MODEL = SentenceTransformer ('sentence-transformers/all-MiniLM-L6-v2', device= 'cpu')
 
 
-def get_embedding(documents, key=None, model="text-embedding-ada-002"):
-    """Default embedding function that uses OpenAI Embeddings."""
-    if isinstance(documents, list):
-        if isinstance(documents[0], dict):
+def get_embedding(documents, key=None):
+    texts = None
+        if isinstance(documents, list):
+          if isinstance(documents[0], dict):
             texts = []
             if isinstance(key, str):
                 if "." in key:
@@ -36,17 +35,12 @@ def get_embedding(documents, key=None, model="text-embedding-ada-002"):
                     texts.append(text)
         elif isinstance(documents[0], str):
             texts = documents
-    batches = [
-        texts[i : i + MAX_BATCH_SIZE] for i in range(0, len(texts), MAX_BATCH_SIZE)
-    ]
-    embeddings = []
-    for batch in batches:
-        response = openai.Embedding.create(input=batch, model=model)
-        embeddings.extend(np.array(item["embedding"]) for item in response["data"])
-    return embeddings
+
+            embeddings = EMBEDDING_MODEL.encode(texts)
+            return embeddings
 
 
-class HyperDB:
+class VectorDB:
     def __init__(
         self,
         documents=None,
